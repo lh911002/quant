@@ -153,22 +153,24 @@ def strage3():
     df_securities.to_csv("output/securities3.csv")
 
 
-# 近几日大阳线最佳介入点
+# 大阳线回调买入策略
 def strage4():
     df = get_fundamentals(query(
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 200,
+        valuation.market_cap > 120,
         indicator.gross_profit_margin > 20
     ), '2021-02-05')
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 200, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-10',
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-11',
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
+        if len(df_bars) < 100:
+            continue
         high = 0  # 最高价
         high_idx = 0
         low = 100000  # 最低价
@@ -195,11 +197,15 @@ def strage4():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if ((high - low_after_high) / high > 0.3 and len(df_bars) - low_after_high_idx) > 1 and 0.0 < (
-                bar_last.close - low_after_high) / low_after_high < 0.1:
-            item['display_name'] = get_security_name(item.code)
-            item['high'] = high
-            item['low'] = low_after_high
-            df_securities.loc[df_securities.index.size] = item
+        for idx2 in range(len(df_bars) - 1, len(df_bars) - 6, -1):
+            bar_item = df_bars.iloc[idx2]
+            pre_bar_item = df_bars.iloc[idx2 - 1]
+            # 大阳线回落介入，且距离高点有空间
+            if (bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04 and (
+                    len(df_bars) - idx2 >= 3) and 0.0 < (bar_last.close - bar_item.open) / bar_item.open < 0.04 and (high - bar_last.close) / high > 0.2:
+                item['display_name'] = get_security_name(item.code)
+                item['high'] = high
+                item['low'] = low_after_high
+                df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/大阳线回落.csv")
+    df_securities.to_csv("output/securities4.csv")
