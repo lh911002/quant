@@ -12,7 +12,7 @@ def get_security_name(code):
     return info.display_name
 
 
-# 获取市值>100亿元 PEG<1,且最近三周股价是上涨德股票
+# 获取市值>100亿元 PEG<1,且最近三周股价是上涨的股票
 def strage1():
     df = get_fundamentals(query(
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
@@ -159,11 +159,11 @@ def strage4():
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 120,
+        valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), '2021-02-05')
+    ), '2021-02-09')
 
-    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'high', 'low'], None, False)
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
         df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-11',
@@ -201,9 +201,11 @@ def strage4():
             bar_item = df_bars.iloc[idx2]
             pre_bar_item = df_bars.iloc[idx2 - 1]
             # 大阳线回落介入，且距离高点有空间
-            if (bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04 and (
-                    len(df_bars) - idx2 >= 3) and 0.0 < (bar_last.close - bar_item.open) / bar_item.open < 0.04 and (high - bar_last.close) / high > 0.2:
+            if (low_after_high_idx <= idx2 and bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04 and (
+                    len(df_bars) - idx2 >= 2) and 0.0 < (bar_last.close - bar_item.open) / bar_item.open < 0.04 and (
+                    high - bar_last.close) / high > 0.2:
                 item['display_name'] = get_security_name(item.code)
+                item['price'] = bar_last.close
                 item['high'] = high
                 item['low'] = low_after_high
                 df_securities.loc[df_securities.index.size] = item
