@@ -6,5 +6,5 @@ import bond
 
 if __name__ == '__main__':
     u.prepare()
-    security.strage4()
-    # bond.strage1()
+    security.strage1()
+    security.strage2()
