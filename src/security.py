@@ -200,10 +200,11 @@ def strage4():
         for idx2 in range(len(df_bars) - 1, len(df_bars) - 6, -1):
             bar_item = df_bars.iloc[idx2]
             pre_bar_item = df_bars.iloc[idx2 - 1]
-            # 低点以后出现大阳线（涨幅>4%) 回落介入，且距离高点有空间
+            # 低点以后出现大阳线（涨幅>4%) 回落介入，且距离高点有空间, 且距离最低<10%
             if (low_after_high_idx <= idx2 and bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04 and (
                     len(df_bars) - idx2 >= 2) and 0.0 < (bar_last.close - bar_item.low) / bar_item.low < 0.04 and (
-                    high - bar_last.close) / high > 0.2:
+                    high - bar_last.close) / high > 0.2 and (
+                    bar_last.close - low_after_high) / low_after_high < 0.1 :
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 item['high'] = high
