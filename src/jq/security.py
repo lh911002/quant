@@ -1,4 +1,4 @@
-from utils import *
+from src.jq.utils import *
 
 
 def print_all_securities():
