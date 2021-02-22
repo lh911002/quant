@@ -11,7 +11,7 @@ def get_security_name(code):
     print(info)
     return info.display_name
 
-# 150亿以上，毛利>20 调整幅度比较大的股票，且最近几周未破新低
+# 周k级别策略，200亿以上，毛利>20 调整幅度比较大的股票，且最近几周未破新低
 def strage1():
     df = get_fundamentals(query(
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
@@ -19,12 +19,12 @@ def strage1():
     ).filter(
         valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), '2021-02-19')
+    ), '2021-02-22')
 
-    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'high', 'low'], None, False)
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 50, '1w', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-19',
+        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-23',
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         high = 0  # 最高价
@@ -53,9 +53,10 @@ def strage1():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if ((high - low_after_high) / high > 0.3 and len(df_bars) - low_after_high_idx) > 2 and 0.02 < (
+        if ((high - low_after_high) / high > 0.33 and len(df_bars) - low_after_high_idx) > 3 and 0.02 < (
                 bar_last.close - low_after_high) / low_after_high < 0.12:
             item['display_name'] = get_security_name(item.code)
+            item['price'] = bar_last.close
             item['high'] = high
             item['low'] = low_after_high
             df_securities.loc[df_securities.index.size] = item
@@ -71,12 +72,12 @@ def strage2():
     ).filter(
         valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), '2021-02-19')
+    ), '2021-02-22')
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-19',
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-23',
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         if len(df_bars) < 100:
