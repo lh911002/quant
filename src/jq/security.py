@@ -169,13 +169,14 @@ def strage3():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
+        change_from_high = (high - bar_last.close) / high
         for idx2 in range(len(df_bars) - 1, 0, -1):
             bar_item = df_bars.iloc[idx2]
             pre_bar_item = df_bars.iloc[idx2 - 1]
             change = (bar_item.close - pre_bar_item.close) / pre_bar_item.close
             if change > 0:
                 break
-            if change <= 0 and (len(df_bars) - idx2) > 5:
+            if change <= 0 and (len(df_bars) - idx2) > 5 and 0.1 < change_from_high < 0.5:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 item['high'] = high
