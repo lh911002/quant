@@ -17,14 +17,14 @@ def strage1():
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 150,
+        valuation.market_cap > 200,
         indicator.gross_profit_margin > 20
-    ), '2021-02-22')
+    ), datetime.date.today())
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-23',
+        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         high = 0  # 最高价
@@ -61,7 +61,7 @@ def strage1():
             item['low'] = low_after_high
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/securities1.csv")
+    df_securities.to_csv("output/1-周线止跌（每周更新）-{}.csv".format(datetime.date.today()))
 
 
 # 日k级别，大阳线回调买入策略
@@ -72,12 +72,12 @@ def strage2():
     ).filter(
         valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), '2021-02-22')
+    ), datetime.date.today())
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, '2021-02-23',
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         if len(df_bars) < 100:
@@ -122,4 +122,67 @@ def strage2():
                 item['low'] = low_after_high
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/securities2.csv")
+    df_securities.to_csv("output/2-日K大阳线回落（每日更新）-{}.csv".format(datetime.date.today()))
+
+
+# 连续五日下跌
+def strage3():
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_total_revenue_year_on_year
+    ).filter(
+        valuation.market_cap > 150,
+        indicator.gross_profit_margin > 20
+    ), datetime.date.today())
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近一年k线前复权
+
+        if len(df_bars) < 100:
+            continue
+        high = 0  # 最高价
+        high_idx = 0
+        low = 100000  # 最低价
+        low_idx = 0
+        for bar_idx in range(len(df_bars)):
+            bar_item = df_bars.iloc[bar_idx]
+            if high > bar_item.high:
+                high = high
+            else:
+                high = bar_item.high
+                high_idx = bar_idx
+            if low < bar_item.low:
+                low = low
+            else:
+                low = bar_item.low
+                low_idx = bar_idx
+        low_after_high = 100000  # 最高价以后的最低价
+        low_after_high_idx = 0
+        for idx1 in range(high_idx, len(df_bars)):
+            bar_item = df_bars.iloc[idx1]
+            if low_after_high < bar_item.low:
+                low_after_high = low_after_high
+            else:
+                low_after_high = bar_item.low
+                low_after_high_idx = idx1
+        bar_last = df_bars.iloc[len(df_bars) - 1]
+        for idx2 in range(len(df_bars) - 1, 0, -1):
+            bar_item = df_bars.iloc[idx2]
+            pre_bar_item = df_bars.iloc[idx2 - 1]
+            change = (bar_item.close - pre_bar_item.close) / pre_bar_item.close
+            if change > 0:
+                break
+            if change <= 0 and (len(df_bars) - idx2) > 5:
+                item['display_name'] = get_security_name(item.code)
+                item['price'] = bar_last.close
+                item['high'] = high
+                item['low'] = low_after_high
+                df_securities.loc[df_securities.index.size] = item
+                break
+
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    df_securities.to_csv("output/3-连续下跌（每日更新）-{}.csv".format(datetime.date.today()))
+

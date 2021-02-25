@@ -1,3 +1,5 @@
+import datetime
+
 class Employee:
     empCount = 0
 
@@ -20,5 +22,7 @@ if __name__ == '__main__':
     # t1.displayEmployee()
     # t2.displayCount()
     # t2.displayEmployee()
-    for i in range(0,3):
-        print(i)
+
+    # for i in range(0,3):
+    #     print(i)
+    print(datetime.date.today() + datetime.timedelta(1))
