@@ -176,7 +176,7 @@ def strage3():
             change = (bar_item.close - pre_bar_item.close) / pre_bar_item.close
             if change > 0:
                 break
-            if change <= 0 and (len(df_bars) - idx2) > 5 and 0.1 < change_from_high < 0.5:
+            if change <= 0 and (len(df_bars) - idx2) > 5 and 0.2 < change_from_high < 0.5:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 item['high'] = high
