@@ -19,7 +19,7 @@ def strage1():
     ).filter(
         valuation.market_cap > 200,
         indicator.gross_profit_margin > 20
-    ), datetime.date.today())
+    ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
@@ -72,7 +72,7 @@ def strage2():
     ).filter(
         valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), datetime.date.today())
+    ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
@@ -125,7 +125,7 @@ def strage2():
     df_securities.to_csv("output/2-日K大阳线回落（每日更新）-{}.csv".format(datetime.date.today()))
 
 
-# 连续五日下跌
+# 连续下跌触底反弹
 def strage3():
     df = get_fundamentals(query(
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
@@ -133,7 +133,7 @@ def strage3():
     ).filter(
         valuation.market_cap > 150,
         indicator.gross_profit_margin > 20
-    ), datetime.date.today())
+    ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
@@ -174,9 +174,10 @@ def strage3():
             bar_item = df_bars.iloc[idx2]
             pre_bar_item = df_bars.iloc[idx2 - 1]
             change = (bar_item.close - pre_bar_item.close) / pre_bar_item.close
-            if change > 0:
+            change_to_last = (bar_item.close - bar_last.close) / bar_item.close
+            if change >= 0:
                 break
-            if change <= 0 and (len(df_bars) - idx2) > 5 and 0.2 < change_from_high < 0.5:
+            if change < 0 and (len(df_bars) - idx2) >= 2 and 0.15 < change_to_last and 0.33 < change_from_high:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 item['high'] = high
@@ -185,5 +186,5 @@ def strage3():
                 break
 
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/3-连续下跌（每日更新）-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/3-暴跌触底反弹（每日更新）-{}.csv".format(datetime.date.today()))
 
