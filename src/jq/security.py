@@ -112,7 +112,7 @@ def strage2():
             bar_item = df_bars.iloc[idx2]
             pre_bar_item = df_bars.iloc[idx2 - 1]
             # 低点以后出现大阳线（涨幅>4%) 回落介入，且距离高点有空间, 且距离最低<10%
-            if (low_after_high_idx <= idx2 and bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04 and (
+            if low_after_high_idx <= idx2 and ((bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04) and (
                     len(df_bars) - idx2 >= 2) and 0.0 < (bar_last.close - bar_item.low) / bar_item.low < 0.04 and (
                     high - bar_last.close) / high > 0.2 and (
                     bar_last.close - low_after_high) / low_after_high < 0.1 :
@@ -169,22 +169,17 @@ def strage3():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        change_from_high = (high - bar_last.close) / high
-        for idx2 in range(len(df_bars) - 1, 0, -1):
-            bar_item = df_bars.iloc[idx2]
-            pre_bar_item = df_bars.iloc[idx2 - 1]
-            change = (bar_item.close - pre_bar_item.close) / pre_bar_item.close
-            change_to_last = (bar_item.close - bar_last.close) / bar_item.close
-            if change >= 0:
-                break
-            if change < 0 and (len(df_bars) - idx2) >= 2 and 0.15 < change_to_last and 0.33 < change_from_high:
-                item['display_name'] = get_security_name(item.code)
-                item['price'] = bar_last.close
-                item['high'] = high
-                item['low'] = low_after_high
-                df_securities.loc[df_securities.index.size] = item
-                break
+        change_from_high = (bar_last.close - high) / high
+
+        bar_item = df_bars.iloc[len(df_bars) - 8]
+        change_of_latest = (bar_last.close - bar_item.close) / bar_item.close #近一周股价变动
+        if change_of_latest < -0.16 and change_from_high < -0.35:
+            item['display_name'] = get_security_name(item.code)
+            item['price'] = bar_last.close
+            item['high'] = high
+            item['low'] = low_after_high
+            df_securities.loc[df_securities.index.size] = item
 
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/3-暴跌触底反弹（每日更新）-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/3-超跌反弹机会（每日更新）-{}.csv".format(datetime.date.today()))
 
