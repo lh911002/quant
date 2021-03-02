@@ -183,3 +183,36 @@ def strage3():
     print("共有{}个股票满足条件".format(len(df_securities)))
     df_securities.to_csv("output/3-超跌反弹机会（每日更新）-{}.csv".format(datetime.date.today()))
 
+
+# 获取市值>100亿元 PEG<1,且最近三周股价是上涨德股票
+def strage4():
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_net_profit_year_on_year
+    ).filter(
+        valuation.market_cap > 100,  # 市值 >100亿元
+        valuation.pe_ratio > 0,  # 盈利
+        indicator.inc_net_profit_year_on_year > 0,  # 利润增长
+        indicator.inc_total_revenue_year_on_year > 0,  # 营收增长
+        (valuation.pe_ratio / indicator.inc_net_profit_year_on_year) <= 1  # PEG < 1
+    ), datetime.date.today() - datetime.timedelta(1))
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'pe', "inc_profit"], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, 100, '1w', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近两年k线
+
+        bar_last = df_bars.iloc[len(df_bars) - 1]
+        bar_third_last = df_bars.iloc[len(df_bars) - 3]
+        #筛选近几周跌幅较小的
+        if bar_last.close > bar_third_last.close and (
+                bar_last.close - bar_third_last.close) / bar_third_last.close < 0.05:
+            item['display_name'] = get_security_name(item.code)
+            item['price'] = bar_last.close
+            item['pe'] = item.pe_ratio
+            item['inc_profit'] = item.inc_net_profit_year_on_year
+            df_securities.loc[df_securities.index.size] = item
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    df_securities.to_csv("output/4-PEG策略-{}.csv".format(datetime.date.today()))
+
