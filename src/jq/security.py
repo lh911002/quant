@@ -17,8 +17,10 @@ def strage1():
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 200,
-        indicator.gross_profit_margin > 20
+        valuation.market_cap > 50,
+        indicator.gross_profit_margin > 20,
+        valuation.pe_ratio > 0,  # 盈利
+        valuation.pe_ratio < 40,  # 盈利
     ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
@@ -53,15 +55,15 @@ def strage1():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if ((high - low_after_high) / high > 0.33 and len(df_bars) - low_after_high_idx) > 3 and 0.02 < (
-                bar_last.close - low_after_high) / low_after_high < 0.12:
+        if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 8 and 0 < (
+                bar_last.close - low_after_high) / low_after_high < 0.18:
             item['display_name'] = get_security_name(item.code)
             item['price'] = bar_last.close
             item['high'] = high
             item['low'] = low_after_high
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/1-周线止跌（每周更新）-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/1-周线止跌横盘（每周更新）-{}.csv".format(datetime.date.today()))
 
 
 # 日k级别，大阳线回调买入策略
@@ -173,7 +175,7 @@ def strage3():
 
         bar_item = df_bars.iloc[len(df_bars) - 8]
         change_of_latest = (bar_last.close - bar_item.close) / bar_item.close #近一周股价变动
-        if change_of_latest < -0.16 and change_from_high < -0.35:
+        if change_of_latest < -0.15 and change_from_high < -0.35:
             item['display_name'] = get_security_name(item.code)
             item['price'] = bar_last.close
             item['high'] = high
@@ -215,4 +217,3 @@ def strage4():
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     df_securities.to_csv("output/4-PEG策略-{}.csv".format(datetime.date.today()))
-
