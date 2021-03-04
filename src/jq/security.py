@@ -11,6 +11,7 @@ def get_security_name(code):
     print(info)
     return info.display_name
 
+
 # 周k级别策略，200亿以上，毛利>20 调整幅度比较大的股票，且最近几周未破新低
 def strage1():
     df = get_fundamentals(query(
@@ -26,7 +27,8 @@ def strage1():
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         high = 0  # 最高价
@@ -57,11 +59,30 @@ def strage1():
         bar_last = df_bars.iloc[len(df_bars) - 1]
         if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 8 and 0 < (
                 bar_last.close - low_after_high) / low_after_high < 0.18:
-            item['display_name'] = get_security_name(item.code)
-            item['price'] = bar_last.close
-            item['high'] = high
-            item['low'] = low_after_high
-            df_securities.loc[df_securities.index.size] = item
+            flag = 1
+            h = 0
+            l = 100000
+            for idx2 in range(low_after_high_idx, len(df_bars)):
+                bar_item = df_bars.iloc[idx2]
+                bar_item_pre = df_bars.iloc[idx2 - 1]
+                if high > bar_item.high:
+                    h = h
+                else:
+                    h = bar_item.high
+                if low < bar_item.low:
+                    l = l
+                else:
+                    l = bar_item.low
+
+                if (h - l / l) > 0.25:
+                    flag = 0
+
+            if flag == 1:
+                item['display_name'] = get_security_name(item.code)
+                item['price'] = bar_last.close
+                item['high'] = high
+                item['low'] = low_after_high
+                df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     df_securities.to_csv("output/1-周线止跌横盘（每周更新）-{}.csv".format(datetime.date.today()))
 
@@ -79,7 +100,8 @@ def strage2():
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         if len(df_bars) < 100:
@@ -117,7 +139,7 @@ def strage2():
             if low_after_high_idx <= idx2 and ((bar_item.close - pre_bar_item.close) / pre_bar_item.close > 0.04) and (
                     len(df_bars) - idx2 >= 2) and 0.0 < (bar_last.close - bar_item.low) / bar_item.low < 0.04 and (
                     high - bar_last.close) / high > 0.2 and (
-                    bar_last.close - low_after_high) / low_after_high < 0.1 :
+                    bar_last.close - low_after_high) / low_after_high < 0.1:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 item['high'] = high
@@ -140,7 +162,8 @@ def strage3():
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         if len(df_bars) < 100:
@@ -173,9 +196,9 @@ def strage3():
         bar_last = df_bars.iloc[len(df_bars) - 1]
         change_from_high = (bar_last.close - high) / high
 
-        bar_item = df_bars.iloc[len(df_bars) - 8]
-        change_of_latest = (bar_last.close - bar_item.close) / bar_item.close #近一周股价变动
-        if change_of_latest < -0.15 and change_from_high < -0.35:
+        bar_item = df_bars.iloc[len(df_bars) - 11]
+        change_of_latest = (bar_last.close - bar_item.close) / bar_item.close  # 近一周股价变动
+        if change_of_latest < -0.15 and change_from_high < -0.25:
             item['display_name'] = get_security_name(item.code)
             item['price'] = bar_last.close
             item['high'] = high
@@ -202,12 +225,13 @@ def strage4():
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'pe', "inc_profit"], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 100, '1w', ['date', 'open', 'high', 'low', 'close'], True, datetime.date.today() + datetime.timedelta(1),
+        df_bars = get_bars(item.code, 100, '1w', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近两年k线
 
         bar_last = df_bars.iloc[len(df_bars) - 1]
         bar_third_last = df_bars.iloc[len(df_bars) - 3]
-        #筛选近几周跌幅较小的
+        # 筛选近几周跌幅较小的
         if bar_last.close > bar_third_last.close and (
                 bar_last.close - bar_third_last.close) / bar_third_last.close < 0.05:
             item['display_name'] = get_security_name(item.code)
