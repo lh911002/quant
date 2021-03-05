@@ -21,7 +21,7 @@ def strage1():
         valuation.market_cap > 50,
         indicator.gross_profit_margin > 20,
         valuation.pe_ratio > 0,  # 盈利
-        valuation.pe_ratio < 100,  # 盈利
+        valuation.pe_ratio < 50,  # 盈利
     ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
@@ -57,14 +57,13 @@ def strage1():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 8 and 0 < (
+        if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 5 and 0 < (
                 bar_last.close - low_after_high) / low_after_high < 0.18:
             flag = 1
             h8 = 0
             l8 = 100000
             for idx2 in range(low_after_high_idx, len(df_bars)):
                 bar_item = df_bars.iloc[idx2]
-                bar_item_pre = df_bars.iloc[idx2 - 1]
                 if h8 > bar_item.high:
                     h8 = h8
                 else:
@@ -147,6 +146,7 @@ def strage2():
                 item['low'] = low_after_high
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/2-日K大阳线回落（每日更新）")
     df_securities.to_csv("output/2-日K大阳线回落（每日更新）/{}.csv".format(datetime.date.today()))
 
 
@@ -207,6 +207,7 @@ def strage3():
             df_securities.loc[df_securities.index.size] = item
 
     print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/3-超跌反弹机会（每日更新）")
     df_securities.to_csv("output/3-超跌反弹机会（每日更新）/{}.csv".format(datetime.date.today()))
 
 
@@ -241,4 +242,5 @@ def strage4():
             item['inc_profit'] = item.inc_net_profit_year_on_year
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/4-PEG策略")
     df_securities.to_csv("output/4-PEG策略/{}.csv".format(datetime.date.today()))
