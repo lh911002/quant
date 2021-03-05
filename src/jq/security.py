@@ -21,7 +21,7 @@ def strage1():
         valuation.market_cap > 50,
         indicator.gross_profit_margin > 20,
         valuation.pe_ratio > 0,  # 盈利
-        valuation.pe_ratio < 40,  # 盈利
+        valuation.pe_ratio < 100,  # 盈利
     ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
@@ -60,22 +60,22 @@ def strage1():
         if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 8 and 0 < (
                 bar_last.close - low_after_high) / low_after_high < 0.18:
             flag = 1
-            h = 0
-            l = 100000
+            h8 = 0
+            l8 = 100000
             for idx2 in range(low_after_high_idx, len(df_bars)):
                 bar_item = df_bars.iloc[idx2]
                 bar_item_pre = df_bars.iloc[idx2 - 1]
-                if high > bar_item.high:
-                    h = h
+                if h8 > bar_item.high:
+                    h8 = h8
                 else:
-                    h = bar_item.high
-                if low < bar_item.low:
-                    l = l
+                    h8 = bar_item.high
+                if l8 < bar_item.low:
+                    l8 = l8
                 else:
-                    l = bar_item.low
+                    l8 = bar_item.low
 
-                if (h - l / l) > 0.25:
-                    flag = 0
+            if ((h8 - l8) / l8) > 0.25:
+                flag = 0
 
             if flag == 1:
                 item['display_name'] = get_security_name(item.code)
@@ -84,7 +84,8 @@ def strage1():
                 item['low'] = low_after_high
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/1-周线止跌横盘（每周更新）-{}.csv".format(datetime.date.today()))
+    mkdir("output/1-周线止跌横盘（每周更新）")
+    df_securities.to_csv("output/1-周线止跌横盘（每周更新）/{}.csv".format(datetime.date.today()))
 
 
 # 日k级别，大阳线回调买入策略
@@ -146,7 +147,7 @@ def strage2():
                 item['low'] = low_after_high
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/2-日K大阳线回落（每日更新）-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/2-日K大阳线回落（每日更新）/{}.csv".format(datetime.date.today()))
 
 
 # 连续下跌触底反弹
@@ -206,7 +207,7 @@ def strage3():
             df_securities.loc[df_securities.index.size] = item
 
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/3-超跌反弹机会（每日更新）-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/3-超跌反弹机会（每日更新）/{}.csv".format(datetime.date.today()))
 
 
 # 获取市值>100亿元 PEG<1,且最近三周股价是上涨德股票
@@ -240,4 +241,4 @@ def strage4():
             item['inc_profit'] = item.inc_net_profit_year_on_year
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
-    df_securities.to_csv("output/4-PEG策略-{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/4-PEG策略/{}.csv".format(datetime.date.today()))
