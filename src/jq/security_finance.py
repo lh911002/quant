@@ -39,10 +39,10 @@ def strage():
                 last_income = item.total_operating_revenue  # 去年收入
                 last_profit = item.np_parent_company_owners  # 去年利润
                 if income_percent <= 0.15:
-                    break
+                    continue
                 else:
                     count = count + 1
-                    last_year_profit = item.np_parent_company_owners
+                last_year_profit = item.np_parent_company_owners
         if count >= 5 and last_year_profit >= 500000000:
             result_item = pandas.Series({'股票代码': item.code})
             result_item['股票名称'] = get_security_name(item.code)
