@@ -18,7 +18,7 @@ def strage1():
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 50,
+        valuation.market_cap > 100,
         indicator.gross_profit_margin > 20,
         valuation.pe_ratio > 0,  # 盈利
         valuation.pe_ratio < 50,  # 盈利
@@ -57,8 +57,8 @@ def strage1():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) > 5 and 0 < (
-                bar_last.close - low_after_high) / low_after_high < 0.18:
+        if ((high - low_after_high) / high > 0.33 and len(df_bars) - low_after_high_idx) >= 4 and 0 < (
+                bar_last.close - low_after_high) / low_after_high < 0.16:
             flag = 1
             h8 = 0
             l8 = 100000
