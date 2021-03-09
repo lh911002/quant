@@ -244,3 +244,65 @@ def strage4():
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/4-PEG策略")
     df_securities.to_csv("output/4-PEG策略/{}.csv".format(datetime.date.today()))
+
+
+# 买入就涨
+def strage5():
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_total_revenue_year_on_year
+    ).filter(
+        valuation.market_cap > 100,
+        indicator.gross_profit_margin > 20,
+    ), datetime.date.today() - datetime.timedelta(1))
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, 60, '1w', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近一年k线前复权
+
+        high = 0  # 最高价
+        high_idx = 0
+        for bar_idx in range(len(df_bars)):
+            bar_item = df_bars.iloc[bar_idx]
+            if high <= bar_item.high:
+                high = bar_item.high
+                high_idx = bar_idx
+        low_after_high = 100000  # 最高价以后的最低价
+        low_after_high_idx = 0
+        for idx1 in range(high_idx, len(df_bars)):
+            bar_item = df_bars.iloc[idx1]
+            if low_after_high < bar_item.low:
+                low_after_high = low_after_high
+            else:
+                low_after_high = bar_item.low
+                low_after_high_idx = idx1
+        bar_last = df_bars.iloc[len(df_bars) - 1]
+        # 调整幅度>30% 最近4根周k线未破新低，距离最低点涨幅<16%
+        if ((high - low_after_high) / high > 0.30 and len(df_bars) - low_after_high_idx) >= 4 and 0 < (
+                bar_last.close - low_after_high) / low_after_high < 0.16:
+            flag = 1
+            pre_item_high = df_bars.iloc[len(df_bars)-3].high
+            pre_item_low = df_bars.iloc[len(df_bars)-3].low
+            for idx2 in range(low_after_high_idx, len(df_bars)):
+                bar_item = df_bars.iloc[idx2]
+                # 最近两根k线底部不断抬高
+                if idx2 >= len(df_bars) - 2 and bar_item.low < pre_item_low:
+                    flag = 0
+                # 最新涨幅不能过大
+                if idx2 == len(df_bars) - 1 and (bar_item.close - bar_item.open)/bar_item.open > 0.04:
+                    flag = 0
+                pre_item_high = bar_item.high
+                pre_item_low = bar_item.low
+
+            if flag == 1:
+                item['display_name'] = get_security_name(item.code)
+                item['price'] = bar_last.close
+                item['high'] = high
+                item['low'] = low_after_high
+                df_securities.loc[df_securities.index.size] = item
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/5-周线蓄势待发（每周更新）")
+    df_securities.to_csv("output/5-周线蓄势待发（每周更新）/{}.csv".format(datetime.date.today()))
