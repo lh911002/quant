@@ -248,13 +248,12 @@ def strage5():
         indicator.inc_total_revenue_year_on_year
     ).filter(
         valuation.market_cap > 100,
-        indicator.gross_profit_margin > 20,
     ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 60, '1w', ['date', 'open', 'high', 'low', 'close'], True,
+        df_bars = get_bars(item.code, 80, '1w', ['date', 'open', 'high', 'low', 'close'], True,
                            datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
@@ -276,15 +275,15 @@ def strage5():
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
         # 调整幅度>30% 最近4根周k线未破新低，距离最低点涨幅<16%
-        if ((high - low_after_high) / high > 0.30 and len(df_bars) - low_after_high_idx) >= 4 and 0 < (
-                bar_last.close - low_after_high) / low_after_high < 0.16:
+        if ((high - low_after_high) / high > 0.35 and len(df_bars) - low_after_high_idx) >= 8 and 0 < (
+                bar_last.close - low_after_high) / low_after_high < 0.18:
             flag = 1
             pre_item_high = df_bars.iloc[len(df_bars)-3].high
             pre_item_low = df_bars.iloc[len(df_bars)-3].low
             for idx2 in range(low_after_high_idx, len(df_bars)):
                 bar_item = df_bars.iloc[idx2]
                 # 最近两根k线底部不断抬高
-                if idx2 >= len(df_bars) - 2 and bar_item.low < pre_item_low:
+                if idx2 >= len(df_bars) - 2 and bar_item.low <= pre_item_low:
                     flag = 0
                 # 最新涨幅不能过大
                 if idx2 == len(df_bars) - 1 and (bar_item.close - bar_item.open)/bar_item.open > 0.04:
@@ -301,3 +300,46 @@ def strage5():
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/5-周线蓄势待发（每周更新）")
     df_securities.to_csv("output/5-周线蓄势待发（每周更新）/{}.csv".format(datetime.date.today()))
+
+
+# 旗形：大阳线后横盘几日，逢低买入
+def strage6():
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_total_revenue_year_on_year
+    ).filter(
+        valuation.market_cap > 100,
+    ), datetime.date.today() - datetime.timedelta(1))
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price'], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, 10, '1d', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近一年k线前复权
+
+        last_increase_bar_idx = 0  # 近期大阳线位置
+        flag = 1
+        for bar_idx in range(len(df_bars)-1, -1, -1):
+            bar_item = df_bars.iloc[bar_idx]
+            pre_bar_item = df_bars.iloc[bar_idx-1]
+            change = (bar_item.close - pre_bar_item.close)/pre_bar_item.close
+            if change >= 0.04:
+                last_increase_bar_idx = bar_idx
+                break
+        if 2 < (len(df_bars) - last_increase_bar_idx) <= 5:
+            last_increase_bar = df_bars.iloc[last_increase_bar_idx]
+            for idx1 in range(last_increase_bar_idx + 1, len(df_bars)):
+                bar_item = df_bars.iloc[idx1]
+                if bar_item.close < last_increase_bar.open + (last_increase_bar.close - last_increase_bar.open)*0.618:
+                    flag = 0
+                    break
+            bar_last = df_bars.iloc[len(df_bars) - 1]
+            change_from_last_increase_bar = (bar_last.close - last_increase_bar.close)/last_increase_bar.close
+            if flag == 1 and -0.04 < change_from_last_increase_bar <= 0.03:
+                item['display_name'] = get_security_name(item.code)
+                item['price'] = bar_last.close
+                df_securities.loc[df_securities.index.size] = item
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/6-旗形（每日）")
+    df_securities.to_csv("output/6-旗形（每日）/{}.csv".format(datetime.date.today()))
