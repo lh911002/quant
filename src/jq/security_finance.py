@@ -54,7 +54,7 @@ def strage1():
 def strage2():
     mkdir("output/平均利润低估")
     stocks = get_all_securities(['stock'])
-    df_result = pandas.DataFrame(None, None, ['股票代码', '股票名称', '近年平均利润(亿元）'], None, False)
+    df_result = pandas.DataFrame(None, None, ['代码', '名称', '当前市值(亿元)', '目标市值(亿元)', '目标估值', '近年平均利润(亿元)', '加权年数'], None, False)
     for stock_index in range(len(stocks)):
         print("当前进度：{}".format(stock_index/len(stocks)))
         stock_item = stocks.iloc[stock_index]
@@ -64,7 +64,7 @@ def strage2():
                   finance.STK_INCOME_STATEMENT.total_operating_revenue,
                   finance.STK_INCOME_STATEMENT.np_parent_company_owners).filter(
             finance.STK_INCOME_STATEMENT.code == stock_item.name,
-            finance.STK_INCOME_STATEMENT.end_date >= '2015-01-01',
+            finance.STK_INCOME_STATEMENT.end_date >= '2016-01-01',
             finance.STK_INCOME_STATEMENT.report_type == 0).order_by(finance.STK_INCOME_STATEMENT.end_date).limit(100)
         df_finance = finance.run_query(q)
         last_income = 0  # 去年收入
@@ -116,8 +116,12 @@ def strage2():
         ), datetime.date.today() - datetime.timedelta(1))
 
         if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 300000000:
-            result_item = pandas.Series({'股票代码': item.code})
-            result_item['股票名称'] = get_security_name(item.code)
-            result_item['近年平均利润(亿元）'] = average_profit / 100000000
+            result_item = pandas.Series({'代码': item.code})
+            result_item['名称'] = get_security_name(item.code)
+            result_item['当前市值(亿元)'] = df.iloc[0].market_cap
+            result_item['目标市值(亿元)'] = target_market_value / 100000000
+            result_item['近年平均利润(亿元)'] = average_profit / 100000000
+            result_item['加权年数'] = years_count
+            result_item['目标估值'] = 15
             df_result.loc[df_result.index.size] = result_item
     df_result.to_csv("output/平均利润低估/{}.csv".format(datetime.date.today()))
