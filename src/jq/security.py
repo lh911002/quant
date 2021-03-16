@@ -343,3 +343,61 @@ def strage6():
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/6-旗形（每日）")
     df_securities.to_csv("output/6-旗形（每日）/{}.csv".format(datetime.date.today()))
+
+#月线反转机会
+def strage7():
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_total_revenue_year_on_year
+    ).filter(
+        valuation.market_cap > 100,
+        indicator.gross_profit_margin > 20,
+    ), datetime.date.today() - datetime.timedelta(1))
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price', 'high', 'low'], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, 40, '1M', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近一年k线前复权
+
+        if len(df_bars) < 12:
+            continue
+        high = 0  # 最高价
+        high_idx = 0
+        low = 100000  # 最低价
+        low_idx = 0
+        for bar_idx in range(len(df_bars)):
+            bar_item = df_bars.iloc[bar_idx]
+            if high > bar_item.high:
+                high = high
+            else:
+                high = bar_item.high
+                high_idx = bar_idx
+            if low < bar_item.low:
+                low = low
+            else:
+                low = bar_item.low
+                low_idx = bar_idx
+        low_after_high = 100000  # 最高价以后的最低价
+        low_after_high_idx = 0
+        for idx1 in range(high_idx+1, len(df_bars)):
+            bar_item = df_bars.iloc[idx1]
+            if low_after_high < bar_item.low:
+                low_after_high = low_after_high
+            else:
+                low_after_high = bar_item.low
+                low_after_high_idx = idx1
+        bar_last = df_bars.iloc[len(df_bars) - 1]
+        change_from_high = (high - low_after_high) / high
+        if change_from_high > 0.40 and 6 <= (len(df_bars) - low_after_high_idx) <= 12 and change_from_high * 0.1 < (
+                bar_last.close - low_after_high) / low_after_high < change_from_high * 0.666:
+            item['display_name'] = get_security_name(item.code)
+            item['price'] = bar_last.close
+            item['high'] = high
+            item['low'] = low_after_high
+            df_securities.loc[df_securities.index.size] = item
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/7-月线反转机会（每月更新）")
+    df_securities.to_csv("output/7-月线反转机会（每月更新）/{}.csv".format(datetime.date.today()))
+
