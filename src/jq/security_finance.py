@@ -1,5 +1,5 @@
 from src.jq.utils import *
-
+import math
 
 def get_security_name(code):
     info = get_security_info(code)
@@ -64,12 +64,13 @@ def strage2():
                   finance.STK_INCOME_STATEMENT.total_operating_revenue,
                   finance.STK_INCOME_STATEMENT.np_parent_company_owners).filter(
             finance.STK_INCOME_STATEMENT.code == stock_item.name,
-            finance.STK_INCOME_STATEMENT.end_date >= '2016-01-01',
+            finance.STK_INCOME_STATEMENT.end_date >= '2015-01-01',
             finance.STK_INCOME_STATEMENT.report_type == 0).order_by(finance.STK_INCOME_STATEMENT.end_date).limit(100)
         df_finance = finance.run_query(q)
         last_income = 0  # 去年收入
         last_profit = 0  # 去年利润
-        count = 0
+        count = 0  #利润增长的年份
+        first_year_profit = 0
         last_year_profit = 0
         max_year_profit =0
         min_year_profit =0
@@ -89,39 +90,53 @@ def strage2():
                         max_year_profit = item.np_parent_company_owners
                     if item.np_parent_company_owners < min_year_profit:
                         min_year_profit = item.np_parent_company_owners
+
                 if last_income == 0:
                     last_income = item.total_operating_revenue  # 去年收入
                     last_profit = item.np_parent_company_owners  # 去年利润
+                    first_year_profit = item.np_parent_company_owners
                     continue
+
+                last_year_profit = item.np_parent_company_owners
 
                 income_percent = item.total_operating_revenue / last_income - 1
                 profit_percent = item.np_parent_company_owners / last_profit - 1
                 last_income = item.total_operating_revenue  # 去年收入
                 last_profit = item.np_parent_company_owners  # 去年利润
-                if income_percent <= 0.15:
+                if profit_percent <= 0.00:
                     continue
                 else:
                     count = count + 1
-                last_year_profit = item.np_parent_company_owners
-        if years_count == 0:
+        if years_count <= 1 or last_year_profit <= 0:
             continue
-        average_profit = years_profit/years_count
-        target_market_value = average_profit * 15
-        df = get_fundamentals(query(
-            valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
-            indicator.inc_total_revenue_year_on_year
-        ).filter(
-            valuation.market_cap <= (target_market_value/100000000),
-            valuation.code == stock_item.name
-        ), datetime.date.today() - datetime.timedelta(1))
 
-        if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 300000000:
-            result_item = pandas.Series({'代码': item.code})
-            result_item['名称'] = get_security_name(item.code)
-            result_item['当前市值(亿元)'] = df.iloc[0].market_cap
-            result_item['目标市值(亿元)'] = target_market_value / 100000000
-            result_item['近年平均利润(亿元)'] = average_profit / 100000000
-            result_item['加权年数'] = years_count
-            result_item['目标估值'] = 15
-            df_result.loc[df_result.index.size] = result_item
-    df_result.to_csv("output/平均利润低估/{}.csv".format(datetime.date.today()))
+        if first_year_profit > 0:
+            change_one_year = math.pow(last_year_profit/first_year_profit, 1/years_count)-1
+            average_profit = years_profit / years_count
+            if change_one_year <= 0:  # 过滤几年利润都未增长的
+                continue
+            target_pe = 5 + change_one_year * 100 * 1.2
+            # if change_one_year < 0.06:
+            #     target_pe = 6
+            # elif change_one_year < 0.10:
+            #     target_pe = 10
+
+            target_market_value = average_profit * target_pe
+            df = get_fundamentals(query(
+                valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+                indicator.inc_total_revenue_year_on_year
+            ).filter(
+                valuation.market_cap <= (target_market_value / 100000000) * 0.9,  #比合理估值略低具有买入价值
+                valuation.code == stock_item.name
+            ), datetime.date.today() - datetime.timedelta(1))
+
+            if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 300000000 and (years_count - count) <= 2:
+                result_item = pandas.Series({'代码': item.code})
+                result_item['名称'] = get_security_name(item.code)
+                result_item['当前市值(亿元)'] = df.iloc[0].market_cap
+                result_item['目标市值(亿元)'] = target_market_value / 100000000
+                result_item['近年平均利润(亿元)'] = average_profit / 100000000
+                result_item['加权年数'] = years_count
+                result_item['目标估值'] = target_pe
+                df_result.loc[df_result.index.size] = result_item
+    df_result.to_csv("output/平均利润低估/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')

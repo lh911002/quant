@@ -1,5 +1,5 @@
 import datetime
-
+import math
 class Employee:
     empCount = 0
 
@@ -25,4 +25,7 @@ if __name__ == '__main__':
 
     # for i in range(0,3):
     #     print(i)
-    print(datetime.date.today() + datetime.timedelta(1))
+
+    # print(datetime.date.today() + datetime.timedelta(1))
+
+    print(math.pow(16,1/4))
