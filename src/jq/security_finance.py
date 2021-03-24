@@ -115,7 +115,7 @@ def strage2():
             average_profit = years_profit / years_count
             if change_one_year <= 0:  # 过滤几年利润都未增长的
                 continue
-            target_pe = 5 + change_one_year * 100 * 1.2
+            target_pe = 5 + change_one_year * 100
             # if change_one_year < 0.06:
             #     target_pe = 6
             # elif change_one_year < 0.10:
@@ -126,11 +126,11 @@ def strage2():
                 valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
                 indicator.inc_total_revenue_year_on_year
             ).filter(
-                valuation.market_cap <= (target_market_value / 100000000) * 0.9,  #比合理估值略低具有买入价值
+                valuation.market_cap <= (target_market_value / 100000000) * 0.7,  #比合理估值略低具有买入价值
                 valuation.code == stock_item.name
             ), datetime.date.today() - datetime.timedelta(1))
 
-            if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 300000000 and (years_count - count) <= 2:
+            if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 200000000 and (years_count - count) <= 2:
                 result_item = pandas.Series({'代码': item.code})
                 result_item['名称'] = get_security_name(item.code)
                 result_item['当前市值(亿元)'] = df.iloc[0].market_cap
