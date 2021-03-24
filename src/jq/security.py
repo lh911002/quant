@@ -56,34 +56,17 @@ def strage1():
                 low_after_high = bar_item.low
                 low_after_high_idx = idx1
         bar_last = df_bars.iloc[len(df_bars) - 1]
-        if bar_last.close >= 10 and (high - low_after_high) / high > 0.33 and (len(df_bars) - low_after_high_idx) >= 6 and 0.03 < (
-                bar_last.close - low_after_high) / low_after_high < 0.18:
-            flag = 1
-            h8 = 0
-            l8 = 100000
-            for idx2 in range(low_after_high_idx, len(df_bars)):
-                bar_item = df_bars.iloc[idx2]
-                if h8 > bar_item.high:
-                    h8 = h8
-                else:
-                    h8 = bar_item.high
-                if l8 < bar_item.low:
-                    l8 = l8
-                else:
-                    l8 = bar_item.low
+        if bar_last.close >= 5 and (high - low_after_high) / high > 0.40 and (len(df_bars) - low_after_high_idx) >= 8 and 0.05 < (
+                bar_last.close - low_after_high) / low_after_high < 0.40:
+            item['display_name'] = get_security_name(item.code)
+            item['price'] = bar_last.close
+            item['high'] = high
+            item['low'] = low_after_high
+            df_securities.loc[df_securities.index.size] = item
 
-            if ((h8 - l8) / l8) > 0.25:
-                flag = 0
-
-            if flag == 1:
-                item['display_name'] = get_security_name(item.code)
-                item['price'] = bar_last.close
-                item['high'] = high
-                item['low'] = low_after_high
-                df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/1-周线止跌横盘（每周更新）")
-    df_securities.to_csv("output/1-周线止跌横盘（每周更新）/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/1-周线止跌横盘（每周更新）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
 
 # 日k级别，大阳线回调买入策略
@@ -146,7 +129,7 @@ def strage2():
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/2-日K大阳线回落（每日更新）")
-    df_securities.to_csv("output/2-日K大阳线回落（每日更新）/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/2-日K大阳线回落（每日更新）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
 
 # 获取市值>100亿元 PEG<1,且最近三周股价是上涨德股票
@@ -181,7 +164,7 @@ def strage4():
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/4-PEG策略")
-    df_securities.to_csv("output/4-PEG策略/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/4-PEG策略/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
 
 # 买入就涨
@@ -242,7 +225,7 @@ def strage5():
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/5-周线蓄势待发（每周更新）")
-    df_securities.to_csv("output/5-周线蓄势待发（每周更新）/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/5-周线蓄势待发（每周更新）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
 
 # 旗形：大阳线后横盘几日，逢低买入
@@ -285,7 +268,7 @@ def strage6():
                 df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/6-旗形（每日）")
-    df_securities.to_csv("output/6-旗形（每日）/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/6-旗形（每日）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
 #月线反转机会
 def strage7():
@@ -342,5 +325,5 @@ def strage7():
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
     mkdir("output/7-月线反转机会（每月更新）")
-    df_securities.to_csv("output/7-月线反转机会（每月更新）/{}.csv".format(datetime.date.today()))
+    df_securities.to_csv("output/7-月线反转机会（每月更新）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
