@@ -83,7 +83,7 @@ def strage1():
             # elif change_one_year < 0.10:
             #     target_pe = 10
 
-            target_market_value = last_year_profit * target_pe
+            target_market_value = ((last_year_profit + average_profit)/2) * target_pe
             df = get_fundamentals(query(
                 valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
                 indicator.inc_total_revenue_year_on_year
