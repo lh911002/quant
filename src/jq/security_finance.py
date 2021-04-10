@@ -88,8 +88,10 @@ def strage1():
                 valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
                 indicator.inc_total_revenue_year_on_year
             ).filter(
-                valuation.market_cap <= (target_market_value / 100000000) * 0.7,  #比合理估值略低具有买入价值
-                valuation.code == stock_item.name
+                valuation.market_cap <= (target_market_value / 100000000) * 0.75,  #  比合理估值略低具有买入价值
+                valuation.code == stock_item.name,
+                indicator.gross_profit_margin > 15,
+                indicator.ocf_to_revenue > 0  # 现金流为正
             ), datetime.date.today() - datetime.timedelta(1))
 
             if len(df) > 0 and (max_year_profit * 0.8 + min_year_profit) > 0 and average_profit >= 200000000 and (years_count - count) <= 2:

@@ -147,6 +147,7 @@ def strage3():
                            datetime.datetime.now(), True)  # 近一年k线前复权
 
         last_increase_bar_idx = 0  # 近期大阳线位置
+        last_increase_bar_percent = 0  # 近期大阳线涨幅
         flag = 1
         for bar_idx in range(len(df_bars)-1, -1, -1):
             bar_item = df_bars.iloc[bar_idx]
@@ -154,6 +155,7 @@ def strage3():
             change = (bar_item.close - pre_bar_item.close)/pre_bar_item.close
             if change >= 0.04:
                 last_increase_bar_idx = bar_idx
+                last_increase_bar_percent = change
                 break
         if 2 < (len(df_bars) - last_increase_bar_idx) <= 5:
             last_increase_bar = df_bars.iloc[last_increase_bar_idx]
@@ -164,7 +166,7 @@ def strage3():
                     break
             bar_last = df_bars.iloc[len(df_bars) - 1]
             change_from_last_increase_bar = (bar_last.close - last_increase_bar.close)/last_increase_bar.close
-            if flag == 1 and -0.04 < change_from_last_increase_bar <= 0.03:
+            if flag == 1 and -last_increase_bar_percent * 0.9 <= change_from_last_increase_bar <= last_increase_bar_percent * 0.3:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 df_securities.loc[df_securities.index.size] = item
