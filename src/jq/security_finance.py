@@ -78,6 +78,7 @@ def strage1():
             if change_one_year <= 0:  # 过滤几年利润都未增长的
                 continue
             target_pe = 5 + change_one_year * 100
+            target_pe = min(target_pe, 40)
             # if change_one_year < 0.06:
             #     target_pe = 6
             # elif change_one_year < 0.10:
@@ -90,7 +91,7 @@ def strage1():
             ).filter(
                 valuation.market_cap <= (target_market_value / 100000000) * 0.75,  #  比合理估值略低具有买入价值
                 valuation.code == stock_item.name,
-                indicator.gross_profit_margin > 15,
+                indicator.gross_profit_margin > 10,
                 indicator.ocf_to_revenue > 0  # 现金流为正
             ), datetime.date.today() - datetime.timedelta(1))
 
