@@ -4,5 +4,5 @@ from src.jq import utils
 
 if __name__ == '__main__':
     utils.prepare()
-    # security.strage1()
-    security_finance.strage1()
+    security.strage3()
+    # security_finance.strage1()

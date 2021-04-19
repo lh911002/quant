@@ -136,15 +136,39 @@ def strage3():
         valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
         indicator.inc_total_revenue_year_on_year
     ).filter(
-        valuation.market_cap > 100,
+        valuation.market_cap >= 100,
+        indicator.gross_profit_margin > 10,
+        valuation.pe_ratio > 0,  # 盈利
+        valuation.pe_ratio < 100,  # 盈利
     ), datetime.date.today() - datetime.timedelta(1))
 
     df_securities = pandas.DataFrame(None, None, ['code', 'display_name', 'price'], None, False)
     for index in range(len(df)):
         item = df.iloc[index]
-        df_bars = get_bars(item.code, 10, '1d', ['date', 'open', 'high', 'low', 'close'], True,
+        df_bars = get_bars(item.code, 150, '1d', ['date', 'open', 'high', 'low', 'close'], True,
                            datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
+
+        high = 0  # 最高价
+        high_idx = 0
+        low = 100000  # 最低价
+        low_idx = 0
+        for bar_idx in range(len(df_bars)):
+            bar_item = df_bars.iloc[bar_idx]
+            if high < bar_item.high:
+                high = bar_item.high
+                high_idx = bar_idx
+            if low > bar_item.low:
+                low = bar_item.low
+                low_idx = bar_idx
+
+        low_after_high = 100000  # 最高价以后的最低价
+        low_after_high_idx = 0
+        for idx1 in range(high_idx, len(df_bars)):
+            bar_item = df_bars.iloc[idx1]
+            if low_after_high > bar_item.low:
+                low_after_high = bar_item.low
+                low_after_high_idx = idx1
 
         last_increase_bar_idx = 0  # 近期大阳线位置
         last_increase_bar_percent = 0  # 近期大阳线涨幅
@@ -157,16 +181,20 @@ def strage3():
                 last_increase_bar_idx = bar_idx
                 last_increase_bar_percent = change
                 break
-        if 2 < (len(df_bars) - last_increase_bar_idx) <= 5:
+        if 1 <= (len(df_bars) - last_increase_bar_idx) <= 5: # 近期出现大阳线，趁着热乎
             last_increase_bar = df_bars.iloc[last_increase_bar_idx]
             for idx1 in range(last_increase_bar_idx + 1, len(df_bars)):
                 bar_item = df_bars.iloc[idx1]
-                if bar_item.close < last_increase_bar.open + (last_increase_bar.close - last_increase_bar.open)*0.618:
+                if bar_item.close >= last_increase_bar.high or bar_item.close < last_increase_bar.open :
                     flag = 0
                     break
             bar_last = df_bars.iloc[len(df_bars) - 1]
             change_from_last_increase_bar = (bar_last.close - last_increase_bar.close)/last_increase_bar.close
-            if flag == 1 and -last_increase_bar_percent * 0.9 <= change_from_last_increase_bar <= last_increase_bar_percent * 0.3:
+            if flag == 1 \
+                    and -last_increase_bar_percent * 0.9 <= change_from_last_increase_bar <= last_increase_bar_percent * 0.3 \
+                    and (high - low_after_high) / high >= 0.37 \
+                    and (len(df_bars) - low_after_high_idx) >= 3 \
+                    and 0.04 <= (bar_last.close - low_after_high) / low_after_high <= 0.28:
                 item['display_name'] = get_security_name(item.code)
                 item['price'] = bar_last.close
                 df_securities.loc[df_securities.index.size] = item
