@@ -270,7 +270,8 @@ def strage5(count):
         df_bars = get_bars(item.code, count*2, '1d', ['date', 'open', 'high', 'low', 'close'], True,
                            datetime.date.today() + datetime.timedelta(1),
                            datetime.datetime.now(), True)  # 近一年k线前复权
-
+        if len(df_bars) < count+1:
+            continue
         first_increse_index = len(df_bars)-1
         for bar_idx in range(len(df_bars)-1, -1, -1):
             bar_item = df_bars.iloc[bar_idx]
@@ -280,7 +281,8 @@ def strage5(count):
                 first_increse_index = bar_idx
                 break
 
-        if len(df_bars)-1 - first_increse_index >=count: # 近期出现大阳线，趁着热乎
+        bar_last = df_bars.iloc[len(df_bars) - 1]
+        if len(df_bars)-1 - first_increse_index >=count and ((bar_last.close - bar_last.low)/bar_last.low) > 0.01: # 连续阴跌，最后一日下影线
             item['display_name'] = get_security_name(item.code)
             df_securities.loc[df_securities.index.size] = item
     print("共有{}个股票满足条件".format(len(df_securities)))
