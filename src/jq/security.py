@@ -252,3 +252,39 @@ def strage4():
     mkdir("output/4-月线反转机会（每月更新）")
     df_securities.to_csv("output/4-月线反转机会（每月更新）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
 
+
+# 连续x日以上下跌，企稳以后做反弹
+def strage5(count):
+    df = get_fundamentals(query(
+        valuation.code, valuation.market_cap, valuation.pe_ratio, income.total_operating_revenue,
+        indicator.inc_total_revenue_year_on_year
+    ).filter(
+        valuation.market_cap >= 50,
+        valuation.pe_ratio > 0,  # 盈利
+        valuation.pe_ratio < 50,  # 盈利
+    ), datetime.date.today() - datetime.timedelta(1))
+
+    df_securities = pandas.DataFrame(None, None, ['code', 'display_name'], None, False)
+    for index in range(len(df)):
+        item = df.iloc[index]
+        df_bars = get_bars(item.code, count*2, '1d', ['date', 'open', 'high', 'low', 'close'], True,
+                           datetime.date.today() + datetime.timedelta(1),
+                           datetime.datetime.now(), True)  # 近一年k线前复权
+
+        first_increse_index = len(df_bars)-1
+        for bar_idx in range(len(df_bars)-1, -1, -1):
+            bar_item = df_bars.iloc[bar_idx]
+            pre_bar_item = df_bars.iloc[bar_idx-1]
+            change = (bar_item.close - pre_bar_item.close)/pre_bar_item.close
+            if change > 0.00 or bar_item.close > bar_item.open:
+                first_increse_index = bar_idx
+                break
+
+        if len(df_bars)-1 - first_increse_index >=count: # 近期出现大阳线，趁着热乎
+            item['display_name'] = get_security_name(item.code)
+            df_securities.loc[df_securities.index.size] = item
+    print("共有{}个股票满足条件".format(len(df_securities)))
+    mkdir("output/5-连续下跌，做企稳反弹（每日）")
+    df_securities.to_csv("output/5-连续下跌，做企稳反弹（每日）/{}.csv".format(datetime.date.today()), index=False, encoding='utf-8', float_format='%.1f')
+
+
