@@ -172,6 +172,7 @@ def strage3():
 
         last_increase_bar_idx = 0  # 近期大阳线位置
         last_increase_bar_percent = 0  # 近期大阳线涨幅
+        low_close = 100000
         for bar_idx in range(len(df_bars)-1, -1, -1):
             bar_item = df_bars.iloc[bar_idx]
             pre_bar_item = df_bars.iloc[bar_idx-1]
@@ -179,7 +180,11 @@ def strage3():
             if change >= 0.04:
                 last_increase_bar_idx = bar_idx
                 last_increase_bar_percent = change
+                if low_close <= bar_item.open:#大阳线之后的k线最低收盘价必须高于大阳线的开盘价，保持强势
+                    last_increase_bar_idx = len(df_bars)
                 break
+            low_close = min(low_close, bar_item.close)
+
         if 1 <= (len(df_bars) - last_increase_bar_idx) <= 5: # 近期出现大阳线，趁着热乎
             last_increase_bar = df_bars.iloc[last_increase_bar_idx]
             bar_last = df_bars.iloc[len(df_bars) - 1]
